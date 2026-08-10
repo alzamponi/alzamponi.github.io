@@ -3,429 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SimEletro Pro — Acionamentos Elétricos</title>
+    <title>Enduro — Corrida Clássica</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #fff;
         }
-        header {
-            background: linear-gradient(135deg, #0f3460, #16213e);
-            padding: 20px 30px;
+        .game-wrap { text-align: center; }
+        canvas {
+            background: #1a1a1a;
+            border: 3px solid #333;
+            display: block;
+            margin: 0 auto;
+            image-rendering: pixelated;
+        }
+        .hud {
             display: flex;
             justify-content: space-between;
+            padding: 10px 0;
+            font-size: 18px;
+            letter-spacing: 2px;
+            background: #111;
+            border: 3px solid #333;
+            border-top: none;
+        }
+        .hud span { padding: 0 15px; }
+        .hud .accent { color: #ffd700; }
+        .controls {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #aaa;
+            line-height: 1.6;
+        }
+        .controls b { color: #ffd700; }
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            border-bottom: 3px solid #e94560;
-            flex-wrap: wrap;
-            gap: 10px;
+            background: rgba(0,0,0,0.85);
+            gap: 20px;
         }
-        header h1 { font-size: 1.4rem; }
-        header h1 span { color: #e94560; }
-        .badge { background: #e94560; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-        .container { display: flex; flex-wrap: wrap; padding: 20px; gap: 20px; }
-        .panel { background: #16213e; border-radius: 12px; padding: 20px; flex: 1; min-width: 300px; }
-        .panel h2 { color: #e94560; margin-bottom: 15px; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 8px; }
-        .palette { display: flex; flex-wrap: wrap; gap: 10px; }
-        .component-btn {
-            background: #0f3460; border: 2px solid #e94560; color: #fff;
-            padding: 10px 14px; border-radius: 8px; cursor: pointer;
-            font-size: 0.85rem; transition: all 0.2s; text-align: center;
+        .overlay h1 {
+            font-size: 48px;
+            color: #ffd700;
+            text-shadow: 0 0 20px #ffd700;
+            letter-spacing: 8px;
         }
-        .component-btn:hover { background: #e94560; transform: scale(1.05); }
-        .component-btn .icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
-        #ladder {
-            background: #0d1117; border: 2px solid #333; border-radius: 8px;
-            min-height: 320px; padding: 15px; font-family: 'Courier New', monospace;
-            overflow-x: auto; white-space: pre; line-height: 1.8; font-size: 0.95rem;
+        .overlay p { font-size: 16px; color: #ccc; max-width: 400px; line-height: 1.7; }
+        .overlay button {
+            background: #ffd700;
+            color: #111;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            transition: transform 0.2s;
         }
-        .controls { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
-        .btn {
-            background: #e94560; color: #fff; border: none; padding: 10px 20px;
-            border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;
-        }
-        .btn:hover { background: #ff6b81; transform: scale(1.03); }
-        .btn.secondary { background: #0f3460; border: 1px solid #e94560; }
-        .btn.secondary:hover { background: #16213e; }
-        .btn.green { background: #2ecc71; }
-        .btn.green:hover { background: #27ae60; }
-        .btn.orange { background: #f39c12; }
-        .btn.orange:hover { background: #e67e22; }
-        .io-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-        .io-item { background: #0f3460; border-radius: 8px; padding: 12px; text-align: center; border: 2px solid #333; transition: all 0.2s; }
-        .io-item.active { border-color: #2ecc71; background: #1a3a2e; }
-        .io-item .label { font-size: 0.72rem; color: #aaa; }
-        .io-item .value { font-size: 1.2rem; font-weight: bold; margin: 5px 0; }
-        .switch { width: 50px; height: 26px; background: #333; border-radius: 13px; position: relative; cursor: pointer; margin: 8px auto 0; transition: background 0.2s; }
-        .switch.on { background: #2ecc71; }
-        .switch::after { content: ''; position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; }
-        .switch.on::after { left: 26px; }
-        .status-bar { background: #0f3460; padding: 10px 20px; display: flex; gap: 20px; flex-wrap: wrap; border-top: 2px solid #e94560; font-size: 0.85rem; }
-        .status-bar .item { display: flex; align-items: center; gap: 6px; }
-        .led { width: 12px; height: 12px; border-radius: 50%; background: #333; }
-        .led.on { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
-        .led.red.on { background: #e94560; box-shadow: 0 0 8px #e94560; }
-        .led.yellow.on { background: #f1c40f; box-shadow: 0 0 8px #f1c40f; }
-        .led.blue.on { background: #3498db; box-shadow: 0 0 8px #3498db; }
-        .tutorial { background: #0f3460; border-radius: 8px; padding: 15px; margin-top: 15px; font-size: 0.9rem; line-height: 1.6; }
-        .tutorial h3 { color: #e94560; margin-bottom: 8px; }
-        .tutorial code { background: #1a1a2e; padding: 2px 6px; border-radius: 4px; }
-        .examples { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-        .example-btn { background: #0f3460; border: 1px solid #2ecc71; color: #fff; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; text-align: left; transition: all 0.2s; }
-        .example-btn:hover { background: #2ecc71; }
-        footer { text-align: center; padding: 20px; color: #666; font-size: 0.8rem; }
-        .timer-bar { margin-top: 10px; }
-        .timer-bar .t { display: inline-block; background: #0f3460; padding: 4px 10px; border-radius: 6px; margin: 3px; font-size: 0.8rem; }
-        .timer-bar .t.active { background: #f39c12; color: #1a1a2e; font-weight: bold; }
+        .overlay button:hover { transform: scale(1.1); }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-
-<header>
-    <h1>⚡ <span>SimEletro Pro</span> — Acionamentos Elétricos Avançados</h1>
-    <span class="badge">Simulador Ladder</span>
-</header>
-
-<div class="container">
-    <!-- Painel de componentes -->
-    <div class="panel">
-        <h2>🔧 Componentes</h2>
-        <p style="font-size:0.85rem; color:#aaa; margin-bottom:12px;">Clique para adicionar ao diagrama</p>
-        <div class="palette">
-            <div class="component-btn" onclick="addComponent('NO')"><span class="icon">⏺</span>Contato NA<br><small>(NO)</small></div>
-            <div class="component-btn" onclick="addComponent('NC')"><span class="icon">⏹</span>Contato NF<br><small>(NC)</small></div>
-            <div class="component-btn" onclick="addComponent('BOBINA')"><span class="icon">◯</span>Bobina<br><small>(Saída)</small></div>
-            <div class="component-btn" onclick="addComponent('RELÉ')"><span class="icon">🔁</span>Relé<br><small>(Interno)</small></div>
-            <div class="component-btn" onclick="addComponent('TIMER')"><span class="icon">⏱</span>Temporizador<br><small>(TON)</small></div>
-        </div>
-
-        <div class="tutorial">
-            <h3>📖 Como usar</h3>
-            <p>1. Adicione componentes clicando nos botões acima.</p>
-            <p>2. Use os interruptores no painel <strong>Entradas</strong>.</p>
-            <p>3. Acompanhe a simulação no diagrama ladder.</p>
-            <p>4. Use os <strong>exemplos prontos</strong> abaixo para estudar cada acionamento.</p>
-        </div>
-
-        <div class="examples">
-            <h3 style="color:#2ecc71; font-size:0.9rem;">📋 Exemplos prontos</h3>
-            <button class="example-btn" onclick="loadStarDelta()">⭐ Partida Estrela-Triângulo</button>
-            <button class="example-btn" onclick="loadReversal()">🔄 Reversão de Motor</button>
-            <button class="example-btn" onclick="loadPhaseInv()">🔀 Inversão de Fase</button>
-            <button class="example-btn" onclick="loadSequential()">⏱ Sequenciamento com Temporizadores</button>
-        </div>
+<div class="game-wrap">
+    <div class="hud">
+        <span>DIA <b class="accent" id="day">1</b></span>
+        <span>CARROS <b class="accent" id="score">0</b></span>
+        <span>VEL <b class="accent" id="speed">60</b></span>
     </div>
-
-    <!-- Área do diagrama -->
-    <div class="panel" style="flex:2;">
-        <h2>📐 Diagrama Ladder</h2>
-        <div id="ladder">// Diagrama vazio — adicione componentes ou carregue um exemplo</div>
-        <div class="timer-bar" id="timer-bar"></div>
-        <div class="controls">
-            <button class="btn green" onclick="simulate()">▶ Simular</button>
-            <button class="btn" onclick="clearLadder()">🗑 Limpar</button>
-        </div>
-    </div>
-
-    <!-- Entradas e Saídas -->
-    <div class="panel">
-        <h2>🎛 Entradas e Saídas</h2>
-        <h3 style="color:#2ecc71; font-size:0.9rem; margin-bottom:10px;">Entradas (Interruptores)</h3>
-        <div class="io-grid" id="inputs-grid"></div>
-        <h3 style="color:#e94560; font-size:0.9rem; margin:20px 0 10px;">Saídas (Bobinas)</h3>
-        <div class="io-grid" id="outputs-grid"></div>
+    <canvas id="game" width="480" height="600"></canvas>
+    <div class="controls">
+        <b>← →</b> ou <b>A D</b> para dirigir &nbsp;|&nbsp; <b>↑ ↓</b> / <b>W S</b> para acelerar/frear
     </div>
 </div>
 
-<div class="status-bar">
-    <div class="item"><span class="led" id="led-power"></span> Alimentação</div>
-    <div class="item"><span class="led blue" id="led-star"></span> Estrela (K1)</div>
-    <div class="item"><span class="led red" id="led-delta"></span> Triângulo (K2)</div>
-    <div class="item"><span class="led" id="led-motor"></span> Motor</div>
-    <div class="item"><span class="led yellow" id="led-timer"></span> Temporizador</div>
-    <div class="item" id="status-text">Status: Aguardando simulação</div>
+<!-- Tela inicial -->
+<div class="overlay" id="startScreen">
+    <h1>ENDURO</h1>
+    <p>Ultrapasse o máximo de carros possível em um dia de corrida. Cada dia termina ao anoitecer — a cada dia o tráfego aumenta e a pista fica mais perigosa. Cuidado com as colisões!</p>
+    <button onclick="startGame()">▶ INICIAR</button>
 </div>
 
-<footer>
-    SimEletro Pro — Plataforma educacional de simulação de acionamentos elétricos<br>
-    Inspirado no conceito do software Cade Simu. Uso didático.
-</footer>
+<!-- Tela de game over -->
+<div class="overlay hidden" id="gameOver">
+    <h1>FIM DE JOGO</h1>
+    <p id="finalScore"></p>
+    <button onclick="startGame()">↻ JOGAR DE NOVO</button>
+</div>
 
 <script>
-    // ====== Estado da simulação ======
-    let ladder = [];
-    let simulating = false;
-    let timers = {};  // temporizadores com estado individual
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const W = 480, H = 600;
 
-    // ====== Entradas (mais opções) ======
-    let inputs = {
-        'I0': { label: 'Botão Liga (S1)', state: false },
-        'I1': { label: 'Botão Desliga (S2)', state: false },
-        'I2': { label: 'Sensor (S3)', state: false },
-        'I3': { label: 'Fim de Curso (S4)', state: false },
-        'I4': { label: 'Emergência (S5)', state: false }
-    };
+    // ====== Estado do jogo ======
+    let game = null;
 
-    // ====== Saídas (mais opções) ======
-    let outputs = {
-        'Q0': { label: 'Contator Principal (KM1)', state: false },
-        'Q1': { label: 'Contator Estrela (KM2)', state: false },
-        'Q2': { label: 'Contator Triângulo (KM3)', state: false },
-        'Q3': { label: 'Contator Reversão (KM4)', state: false },
-        'Q4': { label: 'Sinalização', state: false }
-    };
+    // ====== Classe principal ======
+    class Enduro {
+        constructor() {
+            this.day = 1;
+            this.score = 0;
+            this.speed = 60;
+            this.maxSpeed = 200;
+            this.running = true;
 
-    // ====== Renderizar entradas/saídas ======
-    function renderIO() {
-        const ig = document.getElementById('inputs-grid');
-        ig.innerHTML = '';
-        for (const [key, val] of Object.entries(inputs)) {
-            ig.innerHTML += `
-                <div class="io-item ${val.state ? 'active' : ''}">
-                    <div class="label">${val.label}</div>
-                    <div class="value">${val.state ? 'LIGADO' : 'DESLIGADO'}</div>
-                    <div class="switch ${val.state ? 'on' : ''}" onclick="toggleInput('${key}')"></div>
-                </div>`;
+            // Carro do jogador
+            this.player = { x: W/2 - 15, y: H - 100, w: 30, h: 55 };
+
+            // Estrada (rolagem)
+            this.roadOffset = 0;
+            this.roadWidth = 220;
+            this.roadX = (W - this.roadWidth) / 2;
+
+            // Tráfego
+            this.cars = [];
+            this.spawnTimer = 0;
+
+            // Teclas
+            this.keys = {};
+
+            // Colisão
+            this.collisionCooldown = 0;
+            this.maxCollisions = 3;
+            this.collisions = 0;
         }
-        const og = document.getElementById('outputs-grid');
-        og.innerHTML = '';
-        for (const [key, val] of Object.entries(outputs)) {
-            og.innerHTML += `
-                <div class="io-item ${val.state ? 'active' : ''}">
-                    <div class="label">${val.label}</div>
-                    <div class="value">${val.state ? 'ATIVO' : 'INATIVO'}</div>
-                </div>`;
-        }
-    }
 
-    // ====== Alternar entrada ======
-    function toggleInput(key) {
-        inputs[key].state = !inputs[key].state;
-        renderIO();
-        if (simulating) simulate();
-        updateLadder();
-    }
+        update(dt) {
+            if (!this.running) return;
 
-    // ====== Adicionar componente ======
-    function addComponent(type) {
-        ladder.push({ type, id: Date.now() });
-        updateLadder();
-    }
+            // ====== Controle do jogador ======
+            const moveSpeed = 300 * dt;
+            if (this.keys['ArrowLeft'] || this.keys['a']) this.player.x -= moveSpeed;
+            if (this.keys['ArrowRight'] || this.keys['d']) this.player.x += moveSpeed;
+            if (this.keys['ArrowUp'] || this.keys['w']) this.speed = Math.min(this.maxSpeed, this.speed + 120 * dt);
+            if (this.keys['ArrowDown'] || this.keys['s']) this.speed = Math.max(30, this.speed - 150 * dt);
 
-    // ====== Atualizar visual do diagrama ======
-    function updateLadder() {
-        const el = document.getElementById('ladder');
-        if (ladder.length === 0) {
-            el.textContent = '// Diagrama vazio — adicione componentes ou carregue um exemplo';
-            return;
-        }
-        let text = '──┤ LINHA DE ALIMENTAÇÃO ├──\n';
-        let line = '| ';
-        ladder.forEach((comp, i) => {
-            switch (comp.type) {
-                case 'NO': line += '[ I ]'; break;
-                case 'NC': line += '[ I ]'; break;
-                case 'BOBINA': line += '(Q)'; break;
-                case 'RELÉ': line += '{M}'; break;
-                case 'TIMER': line += '[T]'; break;
+            // Limitar jogador à estrada
+            this.player.x = Math.max(this.roadX + 5, Math.min(this.roadX + this.roadWidth - this.player.w - 5, this.player.x));
+
+            // ====== Rolagem da estrada ======
+            this.roadOffset = (this.roadOffset + this.speed * dt) % 40;
+
+            // ====== Gerar tráfego ======
+            this.spawnTimer -= dt;
+            const spawnInterval = Math.max(0.4, 1.6 - this.day * 0.15);
+            if (this.spawnTimer <= 0) {
+                this.spawnCar();
+                this.spawnTimer = spawnInterval;
             }
-            line += '──';
-        });
-        text += line + '|\n';
-        text += '──────────────────────────\n';
-        text += simulating ? '▶ SIMULANDO' : '⏸ PARADO';
-        el.textContent = text;
-        renderTimers();
-    }
 
-    // ====== Renderizar temporizadores ======
-    function renderTimers() {
-        const bar = document.getElementById('timer-bar');
-        if (Object.keys(timers).length === 0) {
-            bar.innerHTML = '';
-            return;
-        }
-        let html = '<strong style="color:#f39c12;">⏱ Temporizadores:</strong> ';
-        for (const [id, t] of Object.entries(timers)) {
-            html += `<span class="t ${t.running ? 'active' : ''}">T${id}: ${t.elapsed}/${t.target}s</span>`;
-        }
-        bar.innerHTML = html;
-    }
-
-    // ====== Lógica de simulação ======
-    function simulate() {
-        simulating = true;
-
-        // Verifica emergência (NC — desliga tudo se ativada)
-        const emergency = inputs['I4'].state;
-        const liga = inputs['I0'].state;
-        const desliga = inputs['I1'].state;
-        const sensor = inputs['I2'].state;
-        const fimCurso = inputs['I3'].state;
-
-        // Se emergência ativa, tudo desligado
-        if (emergency) {
-            Object.keys(outputs).forEach(k => outputs[k].state = false);
-            stopAllTimers();
-            updateStatus('EMERGÊNCIA ATIVADA — CIRCUITO DESLIGADO');
-            renderIO(); updateLadder();
-            return;
-        }
-
-        // ====== Lógica do exemplo: Partida Estrela-Triângulo ======
-        if (ladder.some(c => c.type === 'TIMER') && outputs['Q1']) {
-            // KM1 (principal) liga com botão liga
-            outputs['Q0'].state = liga && !desliga;
-            // KM2 (estrela) liga junto, mas só por 3s (temporizador)
-            if (outputs['Q0'].state && !timers['1']) {
-                timers['1'] = { running: true, elapsed: 0, target: 3 };
+            // ====== Mover tráfego (mais lento que o jogador = ultrapassagem) ======
+            const carSpeed = this.speed * 0.45;
+            for (let i = this.cars.length - 1; i >= 0; i--) {
+                const c = this.cars[i];
+                c.y += carSpeed * dt;
+                // Carro ultrapassado
+                if (!c.counted && c.y > this.player.y + this.player.h) {
+                    c.counted = true;
+                    this.score++;
+                }
+                // Remover fora da tela
+                if (c.y > H + 60) this.cars.splice(i, 1);
             }
-            if (timers['1'] && timers['1'].running) {
-                outputs['Q1'].state = true;  // Estrela ativa
-                outputs['Q2'].state = false; // Triângulo inativo
-            } else {
-                outputs['Q1'].state = false;
-                outputs['Q2'].state = outputs['Q0'].state; // Triângulo após 3s
+
+            // ====== Colisões ======
+            this.collisionCooldown -= dt;
+            for (const c of this.cars) {
+                if (this.collide(this.player, c) && this.collisionCooldown <= 0) {
+                    this.collisions++;
+                    this.collisionCooldown = 1.2;
+                    this.speed = Math.max(30, this.speed * 0.5);
+                    if (this.collisions >= this.maxCollisions) {
+                        this.running = false;
+                        this.showGameOver();
+                    }
+                }
             }
-            outputs['Q4'].state = outputs['Q0'].state;
-        }
-        // ====== Lógica do exemplo: Reversão de Motor ======
-        else if (outputs['Q3'] && !outputs['Q1']) {
-            // KM1 (frente) e KM4 (ré) — nunca simultâneos
-            outputs['Q0'].state = liga && !desliga;
-            outputs['Q3'].state = sensor && liga && !desliga;
-            // Intertravamento: se ré ativo, frente desligado
-            if (outputs['Q3'].state) outputs['Q0'].state = false;
-            outputs['Q4'].state = outputs['Q0'].state || outputs['Q3'].state;
-        }
-        // ====== Lógica genérica (fallback) ======
-        else {
-            const anyInputOn = Object.values(inputs).some(v => v.state);
-            outputs['Q0'].state = anyInputOn;
-            outputs['Q4'].state = anyInputOn;
-        }
 
-        // Atualizar LEDs
-        document.getElementById('led-power').classList.toggle('on', true);
-        document.getElementById('led-star').classList.toggle('on', outputs['Q1'].state);
-        document.getElementById('led-delta').classList.toggle('on', outputs['Q2'].state);
-        document.getElementById('led-motor').classList.toggle('on', outputs['Q0'].state || outputs['Q3'].state);
-        document.getElementById('led-timer').classList.toggle('on', Object.values(timers).some(t => t.running));
-
-        updateStatus();
-        renderIO();
-        updateLadder();
-    }
-
-    // ====== Atualizar status ======
-    function updateStatus(msg) {
-        const el = document.getElementById('status-text');
-        if (msg) { el.textContent = 'Status: ' + msg; return; }
-        const motorOn = outputs['Q0'].state || outputs['Q3'].state;
-        if (outputs['Q1'].state) el.textContent = 'Status: PARTIDA EM ESTRELA';
-        else if (outputs['Q2'].state) el.textContent = 'Status: OPERAÇÃO EM TRIÂNGULO';
-        else if (outputs['Q3'].state) el.textContent = 'Status: MOTOR EM REVERSÃO (RÉ)';
-        else if (motorOn) el.textContent = 'Status: MOTOR EM OPERAÇÃO';
-        else el.textContent = 'Status: MOTOR PARADO';
-    }
-
-    // ====== Parar todos os temporizadores ======
-    function stopAllTimers() {
-        Object.keys(timers).forEach(k => timers[k].running = false);
-        renderTimers();
-    }
-
-    // ====== Loop de temporizadores ======
-    setInterval(() => {
-        if (!simulating) return;
-        let changed = false;
-        for (const [id, t] of Object.entries(timers)) {
-            if (t.running) {
-                t.elapsed++;
-                if (t.elapsed >= t.target) { t.running = false; }
-                changed = true;
+            // ====== Avanço de dia (tempo de corrida) ======
+            // Simula o "anoitecer" — a cada ~30s avança o dia
+            if (this.dayTimer === undefined) this.dayTimer = 30;
+            this.dayTimer -= dt;
+            if (this.dayTimer <= 0) {
+                this.day++;
+                this.dayTimer = 30;
+                this.maxSpeed += 15;
             }
         }
-        if (changed) { simulate(); }
-    }, 1000);
 
-    // ====== Limpar diagrama ======
-    function clearLadder() {
-        ladder = [];
-        simulating = false;
-        timers = {};
-        Object.keys(outputs).forEach(k => outputs[k].state = false);
-        document.querySelectorAll('.led').forEach(l => l.classList.remove('on'));
-        document.getElementById('status-text').textContent = 'Status: Aguardando simulação';
-        updateLadder();
-        renderIO();
+        spawnCar() {
+            const w = 30, h = 55;
+            const laneCount = 3;
+            const laneWidth = this.roadWidth / laneCount;
+            const lane = Math.floor(Math.random() * laneCount);
+            const x = this.roadX + lane * laneWidth + (laneWidth - w) / 2;
+            // Não spawnar em cima do jogador
+            if (Math.abs(x - this.player.x) < 50) return;
+            const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22'];
+            this.cars.push({
+                x, y: -60,
+                w, h,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                counted: false
+            });
+        }
+
+        collide(a, b) {
+            return a.x < b.x + b.w && a.x + a.w > b.x &&
+                   a.y < b.y + b.h && a.y + a.h > b.y;
+        }
+
+        // ====== Desenho ======
+        draw() {
+            // Fundo (grama)
+            ctx.fillStyle = '#1a5c1a';
+            ctx.fillRect(0, 0, W, H);
+
+            // Estrada
+            ctx.fillStyle = '#333';
+            ctx.fillRect(this.roadX, 0, this.roadWidth, H);
+
+            // Faixas centrais (rolagem)
+            ctx.fillStyle = '#ffd700';
+            const dashH = 20, gap = 20;
+            const centerX = W / 2;
+            for (let y = -dashH + this.roadOffset; y < H; y += dashH + gap) {
+                ctx.fillRect(centerX - 2, y, 4, dashH);
+            }
+
+            // Bordas da estrada
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(this.roadX, 0, 4, H);
+            ctx.fillRect(this.roadX + this.roadWidth - 4, 0, 4, H);
+
+            // Tráfego
+            for (const c of this.cars) {
+                this.drawCar(c.x, c.y, c.w, c.h, c.color);
+            }
+
+            // Jogador
+            this.drawCar(this.player.x, this.player.y, this.player.w, this.player.h, '#ffd700');
+
+            // Efeito de colisão (flash)
+            if (this.collisionCooldown > 0.9) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fillRect(0, 0, W, H);
+            }
+        }
+
+        drawCar(x, y, w, h, color) {
+            // Carro (retângulo com janela)
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = '#111';
+            ctx.fillRect(x + w * 0.2, y + h * 0.3, w * 0.6, h * 0.25); // janela
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillRect(x + 2, y + 2, w - 4, 4); // brilho do capô
+        }
+
+        showGameOver() {
+            document.getElementById('finalScore').textContent =
+                `Você ultrapassou ${this.score} carros em ${this.day} dia(s)`;
+            document.getElementById('gameOver').classList.remove('hidden');
+        }
     }
 
-    // ====== Exemplo: Partida Estrela-Triângulo ======
-    function loadStarDelta() {
-        clearLadder();
-        // KM1 (principal) + KM2 (estrela) + temporizador + KM3 (triângulo)
-        ladder = [
-            { type: 'NO', id: 1 },      // Botão liga
-            { type: 'BOBINA', id: 2 },  // KM1 principal
-            { type: 'TIMER', id: 3 },   // Temporizador 3s
-            { type: 'BOBINA', id: 4 },  // KM2 estrela
-            { type: 'BOBINA', id: 5 }   // KM3 triângulo
-        ];
-        // Inicializa temporizador
-        timers['1'] = { running: false, elapsed: 0, target: 3 };
-        updateLadder();
-        simulate();
+    // ====== Loop principal ======
+    let lastTime = 0;
+    function loop(time) {
+        const dt = Math.min(0.05, (time - lastTime) / 1000);
+        lastTime = time;
+        if (game && game.running) {
+            game.update(dt);
+            game.draw();
+            updateHUD();
+        }
+        requestAnimationFrame(loop);
     }
 
-    // ====== Exemplo: Reversão de Motor ======
-    function loadReversal() {
-        clearLadder();
-        // KM1 (frente) + KM4 (ré) com intertravamento
-        ladder = [
-            { type: 'NO', id: 1 },      // Botão liga
-            { type: 'BOBINA', id: 2 },  // KM1 frente
-            { type: 'BOBINA', id: 3 }   // KM4 ré
-        ];
-        updateLadder();
-        simulate();
+    function updateHUD() {
+        document.getElementById('day').textContent = game.day;
+        document.getElementById('score').textContent = game.score;
+        document.getElementById('speed').textContent = Math.round(game.speed);
     }
 
-    // ====== Exemplo: Inversão de Fase ======
-    function loadPhaseInv() {
-        clearLadder();
-        // Inversão de fase: KM1 (fase normal) + KM4 (fase invertida)
-        ladder = [
-            { type: 'NO', id: 1 },      // Botão liga
-            { type: 'BOBINA', id: 2 },  // KM1 fase normal
-            { type: 'BOBINA', id: 3 }   // KM4 fase invertida
-        ];
-        updateLadder();
-        simulate();
+    // ====== Controles ======
+    document.addEventListener('keydown', e => {
+        if (game) game.keys[e.key] = true;
+    });
+    document.addEventListener('keyup', e => {
+        if (game) game.keys[e.key] = false;
+    });
+
+    // ====== Iniciar ======
+    function startGame() {
+        document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('gameOver').classList.add('hidden');
+        game = new Enduro();
     }
 
-    // ====== Exemplo: Sequenciamento com Temporizadores ======
-    function loadSequential() {
-        clearLadder();
-        ladder = [
-            { type: 'NO', id: 1 },      // Botão liga
-            { type: 'BOBINA', id: 2 },  // Q0
-            { type: 'TIMER', id: 3 },   // T1
-            { type: 'BOBINA', id: 4 },  // Q1
-            { type: 'TIMER', id: 5 },   // T2
-            { type: 'BOBINA', id: 6 }   // Q2
-        ];
-        timers['1'] = { running: false, elapsed: 0, target: 3 };
-        timers['2'] = { running: false, elapsed: 0, target: 6 };
-        updateLadder();
-        simulate();
-    }
-
-    // ====== Inicialização ======
-    renderIO();
-    updateLadder();
+    // ====== Inicializar ======
+    requestAnimationFrame(loop);
 </script>
 </body>
 </html>
