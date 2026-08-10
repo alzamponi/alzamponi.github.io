@@ -3,78 +3,429 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Primeiro Site na Nuvem</title>
+    <title>SimEletro Pro — Acionamentos Elétricos</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            background-color: #f5f7fa;
-            color: #1a1a2e;
-            line-height: 1.6;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
         }
-        h1 {
-            color: #0f3460;
+        header {
+            background: linear-gradient(135deg, #0f3460, #16213e);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             border-bottom: 3px solid #e94560;
-            padding-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        .card {
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        header h1 { font-size: 1.4rem; }
+        header h1 span { color: #e94560; }
+        .badge { background: #e94560; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .container { display: flex; flex-wrap: wrap; padding: 20px; gap: 20px; }
+        .panel { background: #16213e; border-radius: 12px; padding: 20px; flex: 1; min-width: 300px; }
+        .panel h2 { color: #e94560; margin-bottom: 15px; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .palette { display: flex; flex-wrap: wrap; gap: 10px; }
+        .component-btn {
+            background: #0f3460; border: 2px solid #e94560; color: #fff;
+            padding: 10px 14px; border-radius: 8px; cursor: pointer;
+            font-size: 0.85rem; transition: all 0.2s; text-align: center;
         }
-        .badge {
-            display: inline-block;
-            background: #e94560;
-            color: #fff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
+        .component-btn:hover { background: #e94560; transform: scale(1.05); }
+        .component-btn .icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+        #ladder {
+            background: #0d1117; border: 2px solid #333; border-radius: 8px;
+            min-height: 320px; padding: 15px; font-family: 'Courier New', monospace;
+            overflow-x: auto; white-space: pre; line-height: 1.8; font-size: 0.95rem;
         }
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #888;
-            font-size: 14px;
+        .controls { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+        .btn {
+            background: #e94560; color: #fff; border: none; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;
         }
+        .btn:hover { background: #ff6b81; transform: scale(1.03); }
+        .btn.secondary { background: #0f3460; border: 1px solid #e94560; }
+        .btn.secondary:hover { background: #16213e; }
+        .btn.green { background: #2ecc71; }
+        .btn.green:hover { background: #27ae60; }
+        .btn.orange { background: #f39c12; }
+        .btn.orange:hover { background: #e67e22; }
+        .io-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .io-item { background: #0f3460; border-radius: 8px; padding: 12px; text-align: center; border: 2px solid #333; transition: all 0.2s; }
+        .io-item.active { border-color: #2ecc71; background: #1a3a2e; }
+        .io-item .label { font-size: 0.72rem; color: #aaa; }
+        .io-item .value { font-size: 1.2rem; font-weight: bold; margin: 5px 0; }
+        .switch { width: 50px; height: 26px; background: #333; border-radius: 13px; position: relative; cursor: pointer; margin: 8px auto 0; transition: background 0.2s; }
+        .switch.on { background: #2ecc71; }
+        .switch::after { content: ''; position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; }
+        .switch.on::after { left: 26px; }
+        .status-bar { background: #0f3460; padding: 10px 20px; display: flex; gap: 20px; flex-wrap: wrap; border-top: 2px solid #e94560; font-size: 0.85rem; }
+        .status-bar .item { display: flex; align-items: center; gap: 6px; }
+        .led { width: 12px; height: 12px; border-radius: 50%; background: #333; }
+        .led.on { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+        .led.red.on { background: #e94560; box-shadow: 0 0 8px #e94560; }
+        .led.yellow.on { background: #f1c40f; box-shadow: 0 0 8px #f1c40f; }
+        .led.blue.on { background: #3498db; box-shadow: 0 0 8px #3498db; }
+        .tutorial { background: #0f3460; border-radius: 8px; padding: 15px; margin-top: 15px; font-size: 0.9rem; line-height: 1.6; }
+        .tutorial h3 { color: #e94560; margin-bottom: 8px; }
+        .tutorial code { background: #1a1a2e; padding: 2px 6px; border-radius: 4px; }
+        .examples { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .example-btn { background: #0f3460; border: 1px solid #2ecc71; color: #fff; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; text-align: left; transition: all 0.2s; }
+        .example-btn:hover { background: #2ecc71; }
+        footer { text-align: center; padding: 20px; color: #666; font-size: 0.8rem; }
+        .timer-bar { margin-top: 10px; }
+        .timer-bar .t { display: inline-block; background: #0f3460; padding: 4px 10px; border-radius: 6px; margin: 3px; font-size: 0.8rem; }
+        .timer-bar .t.active { background: #f39c12; color: #1a1a2e; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>Meu Primeiro Site na Nuvem ☁️</h1>
+<header>
+    <h1>⚡ <span>SimEletro Pro</span> — Acionamentos Elétricos Avançados</h1>
+    <span class="badge">Simulador Ladder</span>
+</header>
 
-    <p>Esta página foi hospedada com <strong>GitHub Pages</strong> — um serviço de nuvem gratuito.</p>
+<div class="container">
+    <!-- Painel de componentes -->
+    <div class="panel">
+        <h2>🔧 Componentes</h2>
+        <p style="font-size:0.85rem; color:#aaa; margin-bottom:12px;">Clique para adicionar ao diagrama</p>
+        <div class="palette">
+            <div class="component-btn" onclick="addComponent('NO')"><span class="icon">⏺</span>Contato NA<br><small>(NO)</small></div>
+            <div class="component-btn" onclick="addComponent('NC')"><span class="icon">⏹</span>Contato NF<br><small>(NC)</small></div>
+            <div class="component-btn" onclick="addComponent('BOBINA')"><span class="icon">◯</span>Bobina<br><small>(Saída)</small></div>
+            <div class="component-btn" onclick="addComponent('RELÉ')"><span class="icon">🔁</span>Relé<br><small>(Interno)</small></div>
+            <div class="component-btn" onclick="addComponent('TIMER')"><span class="icon">⏱</span>Temporizador<br><small>(TON)</small></div>
+        </div>
 
-    <div class="card">
-        <span class="badge">Apresentação</span>
-        <h2>Sobre mim</h2>
-        <p>Sou aluno(a) de automação industrial e este é meu primeiro site publicado na nuvem.</p>
+        <div class="tutorial">
+            <h3>📖 Como usar</h3>
+            <p>1. Adicione componentes clicando nos botões acima.</p>
+            <p>2. Use os interruptores no painel <strong>Entradas</strong>.</p>
+            <p>3. Acompanhe a simulação no diagrama ladder.</p>
+            <p>4. Use os <strong>exemplos prontos</strong> abaixo para estudar cada acionamento.</p>
+        </div>
+
+        <div class="examples">
+            <h3 style="color:#2ecc71; font-size:0.9rem;">📋 Exemplos prontos</h3>
+            <button class="example-btn" onclick="loadStarDelta()">⭐ Partida Estrela-Triângulo</button>
+            <button class="example-btn" onclick="loadReversal()">🔄 Reversão de Motor</button>
+            <button class="example-btn" onclick="loadPhaseInv()">🔀 Inversão de Fase</button>
+            <button class="example-btn" onclick="loadSequential()">⏱ Sequenciamento com Temporizadores</button>
+        </div>
     </div>
 
-    <div class="card">
-        <span class="badge">O que aprendi</span>
-        <h2>Conceitos de cloud computing</h2>
-        <ul>
-            <li>Hospedagem de site sem servidor próprio</li>
-            <li>URL pública acessível de qualquer lugar</li>
-            <li>Deploy automático a cada atualização</li>
-        </ul>
+    <!-- Área do diagrama -->
+    <div class="panel" style="flex:2;">
+        <h2>📐 Diagrama Ladder</h2>
+        <div id="ladder">// Diagrama vazio — adicione componentes ou carregue um exemplo</div>
+        <div class="timer-bar" id="timer-bar"></div>
+        <div class="controls">
+            <button class="btn green" onclick="simulate()">▶ Simular</button>
+            <button class="btn" onclick="clearLadder()">🗑 Limpar</button>
+        </div>
     </div>
 
-    <footer>
-        <p>Feito com HTML e CSS — publicado em <strong>github.io</strong></p>
-        <p>Data: <span id="data"></span></p>
-    </footer>
+    <!-- Entradas e Saídas -->
+    <div class="panel">
+        <h2>🎛 Entradas e Saídas</h2>
+        <h3 style="color:#2ecc71; font-size:0.9rem; margin-bottom:10px;">Entradas (Interruptores)</h3>
+        <div class="io-grid" id="inputs-grid"></div>
+        <h3 style="color:#e94560; font-size:0.9rem; margin:20px 0 10px;">Saídas (Bobinas)</h3>
+        <div class="io-grid" id="outputs-grid"></div>
+    </div>
+</div>
 
-    <script>
-        // Exibe a data atual automaticamente
-        document.getElementById("data").textContent =
-            new Date().toLocaleDateString("pt-BR");
-    </script>
+<div class="status-bar">
+    <div class="item"><span class="led" id="led-power"></span> Alimentação</div>
+    <div class="item"><span class="led blue" id="led-star"></span> Estrela (K1)</div>
+    <div class="item"><span class="led red" id="led-delta"></span> Triângulo (K2)</div>
+    <div class="item"><span class="led" id="led-motor"></span> Motor</div>
+    <div class="item"><span class="led yellow" id="led-timer"></span> Temporizador</div>
+    <div class="item" id="status-text">Status: Aguardando simulação</div>
+</div>
 
+<footer>
+    SimEletro Pro — Plataforma educacional de simulação de acionamentos elétricos<br>
+    Inspirado no conceito do software Cade Simu. Uso didático.
+</footer>
+
+<script>
+    // ====== Estado da simulação ======
+    let ladder = [];
+    let simulating = false;
+    let timers = {};  // temporizadores com estado individual
+
+    // ====== Entradas (mais opções) ======
+    let inputs = {
+        'I0': { label: 'Botão Liga (S1)', state: false },
+        'I1': { label: 'Botão Desliga (S2)', state: false },
+        'I2': { label: 'Sensor (S3)', state: false },
+        'I3': { label: 'Fim de Curso (S4)', state: false },
+        'I4': { label: 'Emergência (S5)', state: false }
+    };
+
+    // ====== Saídas (mais opções) ======
+    let outputs = {
+        'Q0': { label: 'Contator Principal (KM1)', state: false },
+        'Q1': { label: 'Contator Estrela (KM2)', state: false },
+        'Q2': { label: 'Contator Triângulo (KM3)', state: false },
+        'Q3': { label: 'Contator Reversão (KM4)', state: false },
+        'Q4': { label: 'Sinalização', state: false }
+    };
+
+    // ====== Renderizar entradas/saídas ======
+    function renderIO() {
+        const ig = document.getElementById('inputs-grid');
+        ig.innerHTML = '';
+        for (const [key, val] of Object.entries(inputs)) {
+            ig.innerHTML += `
+                <div class="io-item ${val.state ? 'active' : ''}">
+                    <div class="label">${val.label}</div>
+                    <div class="value">${val.state ? 'LIGADO' : 'DESLIGADO'}</div>
+                    <div class="switch ${val.state ? 'on' : ''}" onclick="toggleInput('${key}')"></div>
+                </div>`;
+        }
+        const og = document.getElementById('outputs-grid');
+        og.innerHTML = '';
+        for (const [key, val] of Object.entries(outputs)) {
+            og.innerHTML += `
+                <div class="io-item ${val.state ? 'active' : ''}">
+                    <div class="label">${val.label}</div>
+                    <div class="value">${val.state ? 'ATIVO' : 'INATIVO'}</div>
+                </div>`;
+        }
+    }
+
+    // ====== Alternar entrada ======
+    function toggleInput(key) {
+        inputs[key].state = !inputs[key].state;
+        renderIO();
+        if (simulating) simulate();
+        updateLadder();
+    }
+
+    // ====== Adicionar componente ======
+    function addComponent(type) {
+        ladder.push({ type, id: Date.now() });
+        updateLadder();
+    }
+
+    // ====== Atualizar visual do diagrama ======
+    function updateLadder() {
+        const el = document.getElementById('ladder');
+        if (ladder.length === 0) {
+            el.textContent = '// Diagrama vazio — adicione componentes ou carregue um exemplo';
+            return;
+        }
+        let text = '──┤ LINHA DE ALIMENTAÇÃO ├──\n';
+        let line = '| ';
+        ladder.forEach((comp, i) => {
+            switch (comp.type) {
+                case 'NO': line += '[ I ]'; break;
+                case 'NC': line += '[ I ]'; break;
+                case 'BOBINA': line += '(Q)'; break;
+                case 'RELÉ': line += '{M}'; break;
+                case 'TIMER': line += '[T]'; break;
+            }
+            line += '──';
+        });
+        text += line + '|\n';
+        text += '──────────────────────────\n';
+        text += simulating ? '▶ SIMULANDO' : '⏸ PARADO';
+        el.textContent = text;
+        renderTimers();
+    }
+
+    // ====== Renderizar temporizadores ======
+    function renderTimers() {
+        const bar = document.getElementById('timer-bar');
+        if (Object.keys(timers).length === 0) {
+            bar.innerHTML = '';
+            return;
+        }
+        let html = '<strong style="color:#f39c12;">⏱ Temporizadores:</strong> ';
+        for (const [id, t] of Object.entries(timers)) {
+            html += `<span class="t ${t.running ? 'active' : ''}">T${id}: ${t.elapsed}/${t.target}s</span>`;
+        }
+        bar.innerHTML = html;
+    }
+
+    // ====== Lógica de simulação ======
+    function simulate() {
+        simulating = true;
+
+        // Verifica emergência (NC — desliga tudo se ativada)
+        const emergency = inputs['I4'].state;
+        const liga = inputs['I0'].state;
+        const desliga = inputs['I1'].state;
+        const sensor = inputs['I2'].state;
+        const fimCurso = inputs['I3'].state;
+
+        // Se emergência ativa, tudo desligado
+        if (emergency) {
+            Object.keys(outputs).forEach(k => outputs[k].state = false);
+            stopAllTimers();
+            updateStatus('EMERGÊNCIA ATIVADA — CIRCUITO DESLIGADO');
+            renderIO(); updateLadder();
+            return;
+        }
+
+        // ====== Lógica do exemplo: Partida Estrela-Triângulo ======
+        if (ladder.some(c => c.type === 'TIMER') && outputs['Q1']) {
+            // KM1 (principal) liga com botão liga
+            outputs['Q0'].state = liga && !desliga;
+            // KM2 (estrela) liga junto, mas só por 3s (temporizador)
+            if (outputs['Q0'].state && !timers['1']) {
+                timers['1'] = { running: true, elapsed: 0, target: 3 };
+            }
+            if (timers['1'] && timers['1'].running) {
+                outputs['Q1'].state = true;  // Estrela ativa
+                outputs['Q2'].state = false; // Triângulo inativo
+            } else {
+                outputs['Q1'].state = false;
+                outputs['Q2'].state = outputs['Q0'].state; // Triângulo após 3s
+            }
+            outputs['Q4'].state = outputs['Q0'].state;
+        }
+        // ====== Lógica do exemplo: Reversão de Motor ======
+        else if (outputs['Q3'] && !outputs['Q1']) {
+            // KM1 (frente) e KM4 (ré) — nunca simultâneos
+            outputs['Q0'].state = liga && !desliga;
+            outputs['Q3'].state = sensor && liga && !desliga;
+            // Intertravamento: se ré ativo, frente desligado
+            if (outputs['Q3'].state) outputs['Q0'].state = false;
+            outputs['Q4'].state = outputs['Q0'].state || outputs['Q3'].state;
+        }
+        // ====== Lógica genérica (fallback) ======
+        else {
+            const anyInputOn = Object.values(inputs).some(v => v.state);
+            outputs['Q0'].state = anyInputOn;
+            outputs['Q4'].state = anyInputOn;
+        }
+
+        // Atualizar LEDs
+        document.getElementById('led-power').classList.toggle('on', true);
+        document.getElementById('led-star').classList.toggle('on', outputs['Q1'].state);
+        document.getElementById('led-delta').classList.toggle('on', outputs['Q2'].state);
+        document.getElementById('led-motor').classList.toggle('on', outputs['Q0'].state || outputs['Q3'].state);
+        document.getElementById('led-timer').classList.toggle('on', Object.values(timers).some(t => t.running));
+
+        updateStatus();
+        renderIO();
+        updateLadder();
+    }
+
+    // ====== Atualizar status ======
+    function updateStatus(msg) {
+        const el = document.getElementById('status-text');
+        if (msg) { el.textContent = 'Status: ' + msg; return; }
+        const motorOn = outputs['Q0'].state || outputs['Q3'].state;
+        if (outputs['Q1'].state) el.textContent = 'Status: PARTIDA EM ESTRELA';
+        else if (outputs['Q2'].state) el.textContent = 'Status: OPERAÇÃO EM TRIÂNGULO';
+        else if (outputs['Q3'].state) el.textContent = 'Status: MOTOR EM REVERSÃO (RÉ)';
+        else if (motorOn) el.textContent = 'Status: MOTOR EM OPERAÇÃO';
+        else el.textContent = 'Status: MOTOR PARADO';
+    }
+
+    // ====== Parar todos os temporizadores ======
+    function stopAllTimers() {
+        Object.keys(timers).forEach(k => timers[k].running = false);
+        renderTimers();
+    }
+
+    // ====== Loop de temporizadores ======
+    setInterval(() => {
+        if (!simulating) return;
+        let changed = false;
+        for (const [id, t] of Object.entries(timers)) {
+            if (t.running) {
+                t.elapsed++;
+                if (t.elapsed >= t.target) { t.running = false; }
+                changed = true;
+            }
+        }
+        if (changed) { simulate(); }
+    }, 1000);
+
+    // ====== Limpar diagrama ======
+    function clearLadder() {
+        ladder = [];
+        simulating = false;
+        timers = {};
+        Object.keys(outputs).forEach(k => outputs[k].state = false);
+        document.querySelectorAll('.led').forEach(l => l.classList.remove('on'));
+        document.getElementById('status-text').textContent = 'Status: Aguardando simulação';
+        updateLadder();
+        renderIO();
+    }
+
+    // ====== Exemplo: Partida Estrela-Triângulo ======
+    function loadStarDelta() {
+        clearLadder();
+        // KM1 (principal) + KM2 (estrela) + temporizador + KM3 (triângulo)
+        ladder = [
+            { type: 'NO', id: 1 },      // Botão liga
+            { type: 'BOBINA', id: 2 },  // KM1 principal
+            { type: 'TIMER', id: 3 },   // Temporizador 3s
+            { type: 'BOBINA', id: 4 },  // KM2 estrela
+            { type: 'BOBINA', id: 5 }   // KM3 triângulo
+        ];
+        // Inicializa temporizador
+        timers['1'] = { running: false, elapsed: 0, target: 3 };
+        updateLadder();
+        simulate();
+    }
+
+    // ====== Exemplo: Reversão de Motor ======
+    function loadReversal() {
+        clearLadder();
+        // KM1 (frente) + KM4 (ré) com intertravamento
+        ladder = [
+            { type: 'NO', id: 1 },      // Botão liga
+            { type: 'BOBINA', id: 2 },  // KM1 frente
+            { type: 'BOBINA', id: 3 }   // KM4 ré
+        ];
+        updateLadder();
+        simulate();
+    }
+
+    // ====== Exemplo: Inversão de Fase ======
+    function loadPhaseInv() {
+        clearLadder();
+        // Inversão de fase: KM1 (fase normal) + KM4 (fase invertida)
+        ladder = [
+            { type: 'NO', id: 1 },      // Botão liga
+            { type: 'BOBINA', id: 2 },  // KM1 fase normal
+            { type: 'BOBINA', id: 3 }   // KM4 fase invertida
+        ];
+        updateLadder();
+        simulate();
+    }
+
+    // ====== Exemplo: Sequenciamento com Temporizadores ======
+    function loadSequential() {
+        clearLadder();
+        ladder = [
+            { type: 'NO', id: 1 },      // Botão liga
+            { type: 'BOBINA', id: 2 },  // Q0
+            { type: 'TIMER', id: 3 },   // T1
+            { type: 'BOBINA', id: 4 },  // Q1
+            { type: 'TIMER', id: 5 },   // T2
+            { type: 'BOBINA', id: 6 }   // Q2
+        ];
+        timers['1'] = { running: false, elapsed: 0, target: 3 };
+        timers['2'] = { running: false, elapsed: 0, target: 6 };
+        updateLadder();
+        simulate();
+    }
+
+    // ====== Inicialização ======
+    renderIO();
+    updateLadder();
+</script>
 </body>
 </html>
