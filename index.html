@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enduro — Corrida Clássica</title>
+    <title>Enduro — Visão por Trás</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -35,41 +35,21 @@
         }
         .hud span { padding: 0 15px; }
         .hud .accent { color: #ffd700; }
-        .controls {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #aaa;
-            line-height: 1.6;
-        }
+        .controls { margin-top: 15px; font-size: 14px; color: #aaa; line-height: 1.6; }
         .controls b { color: #ffd700; }
         .overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0,0,0,0.85);
-            gap: 20px;
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.85); gap: 20px;
         }
-        .overlay h1 {
-            font-size: 48px;
-            color: #ffd700;
-            text-shadow: 0 0 20px #ffd700;
-            letter-spacing: 8px;
-        }
-        .overlay p { font-size: 16px; color: #ccc; max-width: 400px; line-height: 1.7; }
+        .overlay h1 { font-size: 48px; color: #ffd700; text-shadow: 0 0 20px #ffd700; letter-spacing: 8px; }
+        .overlay p { font-size: 16px; color: #ccc; max-width: 420px; line-height: 1.7; }
         .overlay button {
-            background: #ffd700;
-            color: #111;
-            border: none;
-            padding: 15px 40px;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 2px;
-            transition: transform 0.2s;
+            background: #ffd700; color: #111; border: none;
+            padding: 15px 40px; font-size: 20px; font-weight: bold;
+            cursor: pointer; font-family: 'Courier New', monospace;
+            letter-spacing: 2px; transition: transform 0.2s;
         }
         .overlay button:hover { transform: scale(1.1); }
         .hidden { display: none; }
@@ -84,18 +64,16 @@
     </div>
     <canvas id="game" width="480" height="600"></canvas>
     <div class="controls">
-        <b>← →</b> ou <b>A D</b> para dirigir &nbsp;|&nbsp; <b>↑ ↓</b> / <b>W S</b> para acelerar/frear
+        <b>← →</b> ou <b>A D</b> para desviar &nbsp;|&nbsp; <b>↑ ↓</b> / <b>W S</b> acelerar/frear
     </div>
 </div>
 
-<!-- Tela inicial -->
 <div class="overlay" id="startScreen">
     <h1>ENDURO</h1>
-    <p>Ultrapasse o máximo de carros possível em um dia de corrida. Cada dia termina ao anoitecer — a cada dia o tráfego aumenta e a pista fica mais perigosa. Cuidado com as colisões!</p>
+    <p>Corrida em visão por trás do carro. Ultrapasse o máximo de veículos possível — a cada dia o tráfego aumenta. Cuidado com as colisões!</p>
     <button onclick="startGame()">▶ INICIAR</button>
 </div>
 
-<!-- Tela de game over -->
 <div class="overlay hidden" id="gameOver">
     <h1>FIM DE JOGO</h1>
     <p id="finalScore"></p>
@@ -107,10 +85,14 @@
     const ctx = canvas.getContext('2d');
     const W = 480, H = 600;
 
-    // ====== Estado do jogo ======
+    // Parâmetros da estrada em perspectiva
+    const HORIZON = 200;          // linha do horizonte
+    const ROAD_TOP_W = 60;        // largura da estrada no horizonte
+    const ROAD_BOTTOM_W = 420;    // largura da estrada na base
+    const ROAD_CENTER_X = W / 2;
+
     let game = null;
 
-    // ====== Classe principal ======
     class Enduro {
         constructor() {
             this.day = 1;
@@ -119,69 +101,75 @@
             this.maxSpeed = 200;
             this.running = true;
 
-            // Carro do jogador
-            this.player = { x: W/2 - 15, y: H - 100, w: 30, h: 55 };
+            // Posição lateral do jogador (-1 a 1, fração da pista)
+            this.playerLane = 0;
+            this.laneRange = 0.55;
 
-            // Estrada (rolagem)
+            // Rolagem da estrada
             this.roadOffset = 0;
-            this.roadWidth = 220;
-            this.roadX = (W - this.roadWidth) / 2;
+            this.dashCount = 0;
 
-            // Tráfego
+            // Tráfego (posição Z: 0 = horizonte, 1 = perto da câmera)
             this.cars = [];
             this.spawnTimer = 0;
 
-            // Teclas
             this.keys = {};
-
-            // Colisão
             this.collisionCooldown = 0;
             this.maxCollisions = 3;
             this.collisions = 0;
+            this.dayTimer = 30;
+        }
+
+        // ====== Projeção em perspectiva ======
+        project(z) {
+            // z: 0 (horizonte) -> 1 (câmera). Interpola largura e posição Y
+            const y = HORIZON + (H - HORIZON) * z;
+            const roadW = ROAD_TOP_W + (ROAD_BOTTOM_W - ROAD_TOP_W) * z;
+            const scale = 0.2 + 0.8 * z; // tamanho aparente
+            return { y, roadW, scale };
         }
 
         update(dt) {
             if (!this.running) return;
 
-            // ====== Controle do jogador ======
-            const moveSpeed = 300 * dt;
-            if (this.keys['ArrowLeft'] || this.keys['a']) this.player.x -= moveSpeed;
-            if (this.keys['ArrowRight'] || this.keys['d']) this.player.x += moveSpeed;
+            // ====== Controle lateral ======
+            const steerSpeed = 1.4 * dt;
+            if (this.keys['ArrowLeft'] || this.keys['a']) this.playerLane -= steerSpeed;
+            if (this.keys['ArrowRight'] || this.keys['d']) this.playerLane += steerSpeed;
+            this.playerLane = Math.max(-this.laneRange, Math.min(this.laneRange, this.playerLane));
+
+            // ====== Aceleração ======
             if (this.keys['ArrowUp'] || this.keys['w']) this.speed = Math.min(this.maxSpeed, this.speed + 120 * dt);
             if (this.keys['ArrowDown'] || this.keys['s']) this.speed = Math.max(30, this.speed - 150 * dt);
 
-            // Limitar jogador à estrada
-            this.player.x = Math.max(this.roadX + 5, Math.min(this.roadX + this.roadWidth - this.player.w - 5, this.player.x));
-
             // ====== Rolagem da estrada ======
-            this.roadOffset = (this.roadOffset + this.speed * dt) % 40;
+            this.roadOffset = (this.roadOffset + this.speed * dt) % 1;
 
             // ====== Gerar tráfego ======
             this.spawnTimer -= dt;
-            const spawnInterval = Math.max(0.4, 1.6 - this.day * 0.15);
+            const spawnInterval = Math.max(0.35, 1.4 - this.day * 0.12);
             if (this.spawnTimer <= 0) {
                 this.spawnCar();
                 this.spawnTimer = spawnInterval;
             }
 
-            // ====== Mover tráfego (mais lento que o jogador = ultrapassagem) ======
-            const carSpeed = this.speed * 0.45;
+            // ====== Mover tráfego (aproxima-se da câmera) ======
+            const approachSpeed = this.speed * 0.35 * dt;
             for (let i = this.cars.length - 1; i >= 0; i--) {
                 const c = this.cars[i];
-                c.y += carSpeed * dt;
-                // Carro ultrapassado
-                if (!c.counted && c.y > this.player.y + this.player.h) {
+                c.z += approachSpeed;
+                // Ultrapassado quando passa da câmera
+                if (!c.counted && c.z > 1.15) {
                     c.counted = true;
                     this.score++;
                 }
-                // Remover fora da tela
-                if (c.y > H + 60) this.cars.splice(i, 1);
+                if (c.z > 1.3) this.cars.splice(i, 1);
             }
 
-            // ====== Colisões ======
+            // ====== Colisão ======
             this.collisionCooldown -= dt;
             for (const c of this.cars) {
-                if (this.collide(this.player, c) && this.collisionCooldown <= 0) {
+                if (this.collide(c) && this.collisionCooldown <= 0) {
                     this.collisions++;
                     this.collisionCooldown = 1.2;
                     this.speed = Math.max(30, this.speed * 0.5);
@@ -192,9 +180,7 @@
                 }
             }
 
-            // ====== Avanço de dia (tempo de corrida) ======
-            // Simula o "anoitecer" — a cada ~30s avança o dia
-            if (this.dayTimer === undefined) this.dayTimer = 30;
+            // ====== Avanço de dia ======
             this.dayTimer -= dt;
             if (this.dayTimer <= 0) {
                 this.day++;
@@ -204,73 +190,218 @@
         }
 
         spawnCar() {
-            const w = 30, h = 55;
-            const laneCount = 3;
-            const laneWidth = this.roadWidth / laneCount;
-            const lane = Math.floor(Math.random() * laneCount);
-            const x = this.roadX + lane * laneWidth + (laneWidth - w) / 2;
-            // Não spawnar em cima do jogador
-            if (Math.abs(x - this.player.x) < 50) return;
-            const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22'];
+            // Faixa lateral aleatória (-1 a 1)
+            const lane = (Math.random() * 2 - 1) * 0.7;
+            // Não spawnar muito perto do jogador
+            if (Math.abs(lane - this.playerLane) < 0.25) return;
+            const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c'];
             this.cars.push({
-                x, y: -60,
-                w, h,
+                lane, z: 0,
                 color: colors[Math.floor(Math.random() * colors.length)],
                 counted: false
             });
         }
 
-        collide(a, b) {
-            return a.x < b.x + b.w && a.x + a.w > b.x &&
-                   a.y < b.y + b.h && a.y + a.h > b.y;
+        collide(c) {
+            // Colisão aproximada: mesma faixa e z próximo da câmera
+            const laneDiff = Math.abs(c.lane - this.playerLane);
+            return laneDiff < 0.28 && c.z > 0.85 && c.z < 1.1;
         }
 
         // ====== Desenho ======
         draw() {
-            // Fundo (grama)
-            ctx.fillStyle = '#1a5c1a';
-            ctx.fillRect(0, 0, W, H);
+            // Céu
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, HORIZON);
+            skyGrad.addColorStop(0, '#87CEEB');
+            skyGrad.addColorStop(1, '#cfe8f7');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, W, HORIZON);
 
-            // Estrada
-            ctx.fillStyle = '#333';
-            ctx.fillRect(this.roadX, 0, this.roadWidth, H);
-
-            // Faixas centrais (rolagem)
+            // Sol
             ctx.fillStyle = '#ffd700';
-            const dashH = 20, gap = 20;
-            const centerX = W / 2;
-            for (let y = -dashH + this.roadOffset; y < H; y += dashH + gap) {
-                ctx.fillRect(centerX - 2, y, 4, dashH);
-            }
+            ctx.beginPath();
+            ctx.arc(W * 0.78, 70, 25, 0, Math.PI * 2);
+            ctx.fill();
 
-            // Bordas da estrada
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(this.roadX, 0, 4, H);
-            ctx.fillRect(this.roadX + this.roadWidth - 4, 0, 4, H);
+            // Grama
+            ctx.fillStyle = '#2d7d2d';
+            ctx.fillRect(0, HORIZON, W, H - HORIZON);
 
-            // Tráfego
-            for (const c of this.cars) {
-                this.drawCar(c.x, c.y, c.w, c.h, c.color);
-            }
+            // ====== Estrada em perspectiva ======
+            this.drawRoad();
 
-            // Jogador
-            this.drawCar(this.player.x, this.player.y, this.player.w, this.player.h, '#ffd700');
+            // ====== Tráfego (do mais distante ao mais próximo) ======
+            const sorted = [...this.cars].sort((a, b) => a.z - b.z);
+            for (const c of sorted) this.drawTrafficCar(c);
 
-            // Efeito de colisão (flash)
+            // ====== Carro do jogador (visto por trás) ======
+            this.drawPlayerCar();
+
+            // Flash de colisão
             if (this.collisionCooldown > 0.9) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
                 ctx.fillRect(0, 0, W, H);
             }
         }
 
-        drawCar(x, y, w, h, color) {
-            // Carro (retângulo com janela)
-            ctx.fillStyle = color;
-            ctx.fillRect(x, y, w, h);
+        drawRoad() {
+            const bottom = this.project(1);
+            const top = this.project(0.001);
+
+            // Asfalto
+            ctx.fillStyle = '#3a3a3a';
+            ctx.beginPath();
+            ctx.moveTo(ROAD_CENTER_X - top.roadW / 2, top.y);
+            ctx.lineTo(ROAD_CENTER_X + top.roadW / 2, top.y);
+            ctx.lineTo(ROAD_CENTER_X + bottom.roadW / 2, bottom.y);
+            ctx.lineTo(ROAD_CENTER_X - bottom.roadW / 2, bottom.y);
+            ctx.closePath();
+            ctx.fill();
+
+            // Bordas brancas
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(ROAD_CENTER_X - top.roadW / 2, top.y);
+            ctx.lineTo(ROAD_CENTER_X - bottom.roadW / 2, bottom.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(ROAD_CENTER_X + top.roadW / 2, top.y);
+            ctx.lineTo(ROAD_CENTER_X + bottom.roadW / 2, bottom.y);
+            ctx.stroke();
+
+            // Faixa central tracejada (perspectiva)
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            const segments = 12;
+            for (let i = 0; i < segments; i++) {
+                const z0 = i / segments;
+                const z1 = (i + 0.5) / segments;
+                const p0 = this.project(z0);
+                const p1 = this.project(z1);
+                ctx.beginPath();
+                ctx.moveTo(ROAD_CENTER_X, p0.y);
+                ctx.lineTo(ROAD_CENTER_X, p1.y);
+                ctx.stroke();
+            }
+        }
+
+        // ====== Carro do jogador (visto por trás) ======
+        drawPlayerCar() {
+            const baseY = H - 90;
+            const cx = ROAD_CENTER_X + this.playerLane * (ROAD_BOTTOM_W / 2 - 40);
+            const w = 56, h = 100;
+
+            // Sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.beginPath();
+            ctx.ellipse(cx, baseY + h - 10, w * 0.55, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Carroceria
+            const bodyGrad = ctx.createLinearGradient(cx - w/2, 0, cx + w/2, 0);
+            bodyGrad.addColorStop(0, '#b8860b');
+            bodyGrad.addColorStop(0.5, '#ffd700');
+            bodyGrad.addColorStop(1, '#b8860b');
+            ctx.fillStyle = bodyGrad;
+            this.roundRect(cx - w/2, baseY, w, h, 10);
+            ctx.fill();
+
+            // Contorno
+            ctx.strokeStyle = '#8a6d00';
+            ctx.lineWidth = 2;
+            this.roundRect(cx - w/2, baseY, w, h, 10);
+            ctx.stroke();
+
+            // Vidro traseiro
+            ctx.fillStyle = '#1a3a5c';
+            this.roundRect(cx - w*0.32, baseY + 8, w*0.64, h*0.22, 6);
+            ctx.fill();
+            ctx.strokeStyle = '#0d2440';
+            ctx.lineWidth = 1.5;
+            this.roundRect(cx - w*0.32, baseY + 8, w*0.64, h*0.22, 6);
+            ctx.stroke();
+
+            // Para-choque inferior
+            ctx.fillStyle = '#555';
+            this.roundRect(cx - w*0.42, baseY + h - 16, w*0.84, 12, 4);
+            ctx.fill();
+
+            // ====== Luzes traseiras ======
+            const lightOn = this.speed > 30;
+            // Luz esquerda
+            ctx.fillStyle = lightOn ? '#ff3333' : '#8b0000';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = lightOn ? 12 : 0;
+            this.roundRect(cx - w*0.42, baseY + h*0.32, 10, 14, 3);
+            ctx.fill();
+            // Luz direita
+            this.roundRect(cx + w*0.42 - 10, baseY + h*0.32, 10, 14, 3);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // ====== Rodas ======
+            const wheelW = 12, wheelH = 26;
             ctx.fillStyle = '#111';
-            ctx.fillRect(x + w * 0.2, y + h * 0.3, w * 0.6, h * 0.25); // janela
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.fillRect(x + 2, y + 2, w - 4, 4); // brilho do capô
+            // Roda esquerda
+            this.roundRect(cx - w/2 - 6, baseY + 30, wheelW, wheelH, 4);
+            ctx.fill();
+            this.roundRect(cx - w/2 - 6, baseY + h - 45, wheelW, wheelH, 4);
+            ctx.fill();
+            // Roda direita
+            this.roundRect(cx + w/2 - 6, baseY + 30, wheelW, wheelH, 4);
+            ctx.fill();
+            this.roundRect(cx + w/2 - 6, baseY + h - 45, wheelW, wheelH, 4);
+            ctx.fill();
+        }
+
+        // ====== Carro de tráfego (com perspectiva) ======
+        drawTrafficCar(c) {
+            const p = this.project(c.z);
+            if (p.y < HORIZON || p.y > H) return;
+
+            const cx = ROAD_CENTER_X + c.lane * (p.roadW / 2 - 25);
+            const w = 46 * p.scale;
+            const h = 80 * p.scale;
+
+            // Sombra
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(cx, p.y + h - 6, w * 0.5, 6 * p.scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Carroceria
+            ctx.fillStyle = c.color;
+            this.roundRect(cx - w/2, p.y, w, h, 8 * p.scale);
+            ctx.fill();
+
+            // Contorno
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 1.5;
+            this.roundRect(cx - w/2, p.y, w, h, 8 * p.scale);
+            ctx.stroke();
+
+            // Teto / janela (visto por trás)
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            this.roundRect(cx - w*0.3, p.y + h*0.15, w*0.6, h*0.3, 5 * p.scale);
+            ctx.fill();
+
+            // Luzes traseiras
+            ctx.fillStyle = '#ff3333';
+            this.roundRect(cx - w*0.42, p.y + h*0.35, 6 * p.scale, 8 * p.scale, 2);
+            ctx.fill();
+            this.roundRect(cx + w*0.42 - 6 * p.scale, p.y + h*0.35, 6 * p.scale, 8 * p.scale, 2);
+            ctx.fill();
+        }
+
+        roundRect(x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
         }
 
         showGameOver() {
@@ -280,7 +411,7 @@
         }
     }
 
-    // ====== Loop principal ======
+    // ====== Loop ======
     let lastTime = 0;
     function loop(time) {
         const dt = Math.min(0.05, (time - lastTime) / 1000);
@@ -299,22 +430,15 @@
         document.getElementById('speed').textContent = Math.round(game.speed);
     }
 
-    // ====== Controles ======
-    document.addEventListener('keydown', e => {
-        if (game) game.keys[e.key] = true;
-    });
-    document.addEventListener('keyup', e => {
-        if (game) game.keys[e.key] = false;
-    });
+    document.addEventListener('keydown', e => { if (game) game.keys[e.key] = true; });
+    document.addEventListener('keyup', e => { if (game) game.keys[e.key] = false; });
 
-    // ====== Iniciar ======
     function startGame() {
         document.getElementById('startScreen').classList.add('hidden');
         document.getElementById('gameOver').classList.add('hidden');
         game = new Enduro();
     }
 
-    // ====== Inicializar ======
     requestAnimationFrame(loop);
 </script>
 </body>
