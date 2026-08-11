@@ -3,428 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enduro — Visão por Trás</title>
+    <title>Meu Primeiro Site na Nuvem</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0a0a0a;
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; font-family: 'Courier New', monospace; color: #fff;
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f5f7fa;
+            color: #1a1a2e;
+            line-height: 1.6;
         }
-        .game-wrap { text-align: center; }
-        canvas {
-            background: #1a1a1a; border: 3px solid #333;
-            display: block; margin: 0 auto; image-rendering: pixelated;
+        h1 {
+            color: #0f3460;
+            border-bottom: 3px solid #e94560;
+            padding-bottom: 10px;
         }
-        .hud {
-            display: flex; justify-content: space-between; padding: 10px 0;
-            font-size: 18px; letter-spacing: 2px; background: #111;
-            border: 3px solid #333; border-top: none;
+        .card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        .hud span { padding: 0 15px; }
-        .hud .accent { color: #ffd700; }
-        .controls { margin-top: 15px; font-size: 14px; color: #aaa; line-height: 1.6; }
-        .controls b { color: #ffd700; }
-        .overlay {
-            position: absolute; inset: 0; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; background: rgba(0,0,0,0.85); gap: 20px;
+        .badge {
+            display: inline-block;
+            background: #e94560;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
         }
-        .overlay h1 { font-size: 48px; color: #ffd700; text-shadow: 0 0 20px #ffd700; letter-spacing: 8px; }
-        .overlay p { font-size: 16px; color: #ccc; max-width: 420px; line-height: 1.7; }
-        .overlay button {
-            background: #ffd700; color: #111; border: none; padding: 15px 40px;
-            font-size: 20px; font-weight: bold; cursor: pointer;
-            font-family: 'Courier New', monospace; letter-spacing: 2px; transition: transform 0.2s;
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #888;
+            font-size: 14px;
         }
-        .overlay button:hover { transform: scale(1.1); }
-        .hidden { display: none; }
     </style>
 </head>
 <body>
-<div class="game-wrap">
-    <div class="hud">
-        <span>DIA <b class="accent" id="day">1</b></span>
-        <span>CARROS <b class="accent" id="score">0</b></span>
-        <span>VEL <b class="accent" id="speed">60</b></span>
+
+    <h1>Meu Primeiro Site na Nuvem ☁️</h1>
+
+    <p>Esta página foi hospedada com <strong>GitHub Pages</strong> — um serviço de nuvem gratuito.</p>
+
+    <div class="card">
+        <span class="badge">Exercício 1</span>
+        <h2>Sobre mim</h2>
+        <p>Escreva aqui uma breve apresentação. Exemplo: "Sou aluno(a) de automação e este é meu primeiro site publicado na nuvem."</p>
     </div>
-    <canvas id="game" width="480" height="600"></canvas>
-    <div class="controls">
-        <b>← →</b> ou <b>A D</b> para desviar &nbsp;|&nbsp; <b>↑ ↓</b> / <b>W S</b> acelerar/frear
+
+    <div class="card">
+        <span class="badge">O que aprendi</span>
+        <h2>Conceitos de cloud computing</h2>
+        <ul>
+            <li>Hospedagem de site sem servidor próprio</li>
+            <li>URL pública acessível de qualquer lugar</li>
+            <li>Deploy automático a cada atualização</li>
+        </ul>
     </div>
-</div>
 
-<div class="overlay" id="startScreen">
-    <h1>ENDURO</h1>
-    <p>Corrida em visão por trás do carro. Ultrapasse o máximo de veículos possível — a cada dia o tráfego aumenta. Cuidado com as colisões!</p>
-    <button onclick="startGame()">▶ INICIAR</button>
-</div>
+    <footer>
+        <p>Feito com HTML e CSS — publicado em <strong>github.io</strong></p>
+        <p>Data: <span id="data"></span></p>
+    </footer>
 
-<div class="overlay hidden" id="gameOver">
-    <h1>FIM DE JOGO</h1>
-    <p id="finalScore"></p>
-    <button onclick="startGame()">↻ JOGAR DE NOVO</button>
-</div>
+    <script>
+        // Exibe a data atual automaticamente
+        document.getElementById("data").textContent =
+            new Date().toLocaleDateString("pt-BR");
+    </script>
 
-<script>
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const W = 480, H = 600;
-
-    // Parâmetros da estrada em perspectiva
-    const HORIZON = 200;
-    const ROAD_TOP_W = 60;
-    const ROAD_BOTTOM_W = 420;
-    const ROAD_CENTER_X = W / 2;
-
-    let game = null;
-
-    class Enduro {
-        constructor() {
-            this.day = 1;
-            this.score = 0;
-            this.speed = 60;
-            this.maxSpeed = 200;
-            this.running = true;
-
-            this.playerLane = 0;
-            this.laneRange = 0.55;
-
-            this.roadOffset = 0;
-
-            this.cars = [];
-            this.spawnTimer = 0;
-
-            this.keys = {};
-            this.collisionCooldown = 0;
-            this.maxCollisions = 3;
-            this.collisions = 0;
-            this.dayTimer = 30;
-        }
-
-        // Projeção: z=0 no horizonte, z=1 na câmera
-        project(z) {
-            const y = HORIZON + (H - HORIZON) * z;
-            const roadW = ROAD_TOP_W + (ROAD_BOTTOM_W - ROAD_TOP_W) * z;
-            const scale = 0.2 + 0.8 * z;
-            return { y, roadW, scale };
-        }
-
-        update(dt) {
-            if (!this.running) return;
-
-            // Controle lateral
-            const steerSpeed = 1.4 * dt;
-            if (this.keys['ArrowLeft'] || this.keys['a']) this.playerLane -= steerSpeed;
-            if (this.keys['ArrowRight'] || this.keys['d']) this.playerLane += steerSpeed;
-            this.playerLane = Math.max(-this.laneRange, Math.min(this.laneRange, this.playerLane));
-
-            // Aceleração / freio
-            if (this.keys['ArrowUp'] || this.keys['w']) this.speed = Math.min(this.maxSpeed, this.speed + 120 * dt);
-            if (this.keys['ArrowDown'] || this.keys['s']) this.speed = Math.max(30, this.speed - 150 * dt);
-
-            // Rolagem das faixas (escala normalizada pela velocidade)
-            this.roadOffset = (this.roadOffset + this.speed * dt * 0.015) % 1;
-
-            // Gerar tráfego
-            this.spawnTimer -= dt;
-            const spawnInterval = Math.max(0.3, 1.3 - this.day * 0.1);
-            if (this.spawnTimer <= 0) {
-                this.spawnCar();
-                this.spawnTimer = spawnInterval;
-            }
-
-            // Aproximação dos carros (z normalizado — consertado)
-            const approach = (0.15 + this.speed * 0.0015) * dt;
-            for (let i = this.cars.length - 1; i >= 0; i--) {
-                const c = this.cars[i];
-                c.z += approach;
-                if (!c.counted && c.z > 1.0) { c.counted = true; this.score++; }
-                if (c.z > 1.15) this.cars.splice(i, 1);
-            }
-
-            // Colisão
-            this.collisionCooldown -= dt;
-            for (const c of this.cars) {
-                if (this.collide(c) && this.collisionCooldown <= 0) {
-                    this.collisions++;
-                    this.collisionCooldown = 1.2;
-                    this.speed = Math.max(30, this.speed * 0.5);
-                    if (this.collisions >= this.maxCollisions) {
-                        this.running = false;
-                        this.showGameOver();
-                    }
-                }
-            }
-
-            // Avanço de dia
-            this.dayTimer -= dt;
-            if (this.dayTimer <= 0) {
-                this.day++;
-                this.dayTimer = 30;
-                this.maxSpeed += 15;
-            }
-        }
-
-        spawnCar() {
-            let lane;
-            do {
-                lane = (Math.random() * 2 - 1) * 0.75;
-            } while (Math.abs(lane - this.playerLane) < 0.3);
-            const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c'];
-            this.cars.push({
-                lane, z: 0,
-                color: colors[Math.floor(Math.random() * colors.length)],
-                counted: false
-            });
-        }
-
-        collide(c) {
-            const laneDiff = Math.abs(c.lane - this.playerLane);
-            return laneDiff < 0.28 && c.z > 0.82 && c.z < 1.05;
-        }
-
-        draw() {
-            // Céu
-            const skyGrad = ctx.createLinearGradient(0, 0, 0, HORIZON);
-            skyGrad.addColorStop(0, '#87CEEB');
-            skyGrad.addColorStop(1, '#cfe8f7');
-            ctx.fillStyle = skyGrad;
-            ctx.fillRect(0, 0, W, HORIZON);
-
-            // Sol
-            ctx.fillStyle = '#ffd700';
-            ctx.beginPath();
-            ctx.arc(W * 0.78, 70, 25, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Grama
-            ctx.fillStyle = '#2d7d2d';
-            ctx.fillRect(0, HORIZON, W, H - HORIZON);
-
-            this.drawRoad();
-
-            // Tráfego (distante → próximo)
-            const sorted = [...this.cars].sort((a, b) => a.z - b.z);
-            for (const c of sorted) this.drawTrafficCar(c);
-
-            this.drawPlayerCar();
-
-            // Flash de colisão
-            if (this.collisionCooldown > 0.9) {
-                ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                ctx.fillRect(0, 0, W, H);
-            }
-        }
-
-        drawRoad() {
-            const bottom = this.project(1);
-            const top = this.project(0.001);
-
-            // Asfalto
-            ctx.fillStyle = '#3a3a3a';
-            ctx.beginPath();
-            ctx.moveTo(ROAD_CENTER_X - top.roadW / 2, top.y);
-            ctx.lineTo(ROAD_CENTER_X + top.roadW / 2, top.y);
-            ctx.lineTo(ROAD_CENTER_X + bottom.roadW / 2, bottom.y);
-            ctx.lineTo(ROAD_CENTER_X - bottom.roadW / 2, bottom.y);
-            ctx.closePath();
-            ctx.fill();
-
-            // Bordas brancas
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(ROAD_CENTER_X - top.roadW / 2, top.y);
-            ctx.lineTo(ROAD_CENTER_X - bottom.roadW / 2, bottom.y);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(ROAD_CENTER_X + top.roadW / 2, top.y);
-            ctx.lineTo(ROAD_CENTER_X + bottom.roadW / 2, bottom.y);
-            ctx.stroke();
-
-            // ====== Faixa central tracejada COM rolagem (consertada) ======
-            const dashLen = 6, gap = 4, cycle = dashLen + gap;
-            const maxDist = 150;
-            const offset = this.roadOffset * cycle;
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = 3;
-            for (let d = 0; d < maxDist; d += cycle) {
-                const w0 = d + offset;
-                const w1 = d + dashLen + offset;
-                const z0 = 1 / (1 + w0);
-                const z1 = 1 / (1 + w1);
-                const p0 = this.project(z0);
-                const p1 = this.project(z1);
-                ctx.beginPath();
-                ctx.moveTo(ROAD_CENTER_X, p0.y);
-                ctx.lineTo(ROAD_CENTER_X, p1.y);
-                ctx.stroke();
-            }
-        }
-
-        // ====== Carro do jogador em PERSPECTIVA (visto por trás) ======
-        drawPlayerCar() {
-            const bottomY = H - 105;
-            const topY = bottomY - 115;
-            const bottomHalfW = 36;
-            const topHalfW = 22;
-            const cx = ROAD_CENTER_X + this.playerLane * (ROAD_BOTTOM_W / 2 - 55);
-
-            // Sombra
-            ctx.fillStyle = 'rgba(0,0,0,0.4)';
-            ctx.beginPath();
-            ctx.ellipse(cx, bottomY + 8, bottomHalfW + 8, 11, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Rodas (atrás da carroceria, fora das laterais)
-            ctx.fillStyle = '#111';
-            ctx.fillRect(cx - bottomHalfW - 10, bottomY - 56, 13, 44);
-            ctx.fillRect(cx + bottomHalfW - 3, bottomY - 56, 13, 44);
-            ctx.fillStyle = '#2a2a2a';
-            ctx.fillRect(cx - bottomHalfW - 10, bottomY - 56, 13, 10);
-            ctx.fillRect(cx + bottomHalfW - 3, bottomY - 56, 13, 10);
-
-            // Carroceria trapezoidal (perspectiva: teto mais estreito que a base)
-            const grad = ctx.createLinearGradient(cx - bottomHalfW, 0, cx + bottomHalfW, 0);
-            grad.addColorStop(0, '#8a6d00');
-            grad.addColorStop(0.5, '#ffd700');
-            grad.addColorStop(1, '#8a6d00');
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.moveTo(cx - topHalfW, topY);
-            ctx.lineTo(cx + topHalfW, topY);
-            ctx.lineTo(cx + bottomHalfW, bottomY);
-            ctx.lineTo(cx - bottomHalfW, bottomY);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = '#5c4a00';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Vidro traseiro (trapezoide interno)
-            ctx.fillStyle = '#16324f';
-            ctx.beginPath();
-            ctx.moveTo(cx - topHalfW * 0.7, topY + 6);
-            ctx.lineTo(cx + topHalfW * 0.7, topY + 6);
-            ctx.lineTo(cx + topHalfW * 0.92, topY + 42);
-            ctx.lineTo(cx - topHalfW * 0.92, topY + 42);
-            ctx.closePath();
-            ctx.fill();
-            ctx.strokeStyle = '#0d2440';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
-            // Linha do porta-malas
-            ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(cx - bottomHalfW * 0.95, topY + 50);
-            ctx.lineTo(cx + bottomHalfW * 0.95, topY + 50);
-            ctx.stroke();
-
-            // Para-choque
-            ctx.fillStyle = '#3d3d3d';
-            ctx.fillRect(cx - bottomHalfW * 0.88, bottomY - 14, bottomHalfW * 1.76, 10);
-
-            // Luzes traseiras (acendem ao acelerar)
-            const lightOn = this.speed > 40;
-            ctx.fillStyle = lightOn ? '#ff2a2a' : '#991111';
-            ctx.shadowColor = '#ff0000';
-            ctx.shadowBlur = lightOn ? 14 : 0;
-            ctx.fillRect(cx - bottomHalfW * 0.88, topY + 55, 13, 18);
-            ctx.fillRect(cx + bottomHalfW * 0.88 - 13, topY + 55, 13, 18);
-            ctx.shadowBlur = 0;
-
-            // Placa
-            ctx.fillStyle = '#e8e8e8';
-            ctx.fillRect(cx - 13, bottomY - 34, 26, 12);
-            ctx.strokeStyle = '#888';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(cx - 13, bottomY - 34, 26, 12);
-        }
-
-        // ====== Carros de tráfego (escala em perspectiva) ======
-        drawTrafficCar(c) {
-            const p = this.project(c.z);
-            if (p.y < HORIZON || p.y > H) return;
-
-            const cx = ROAD_CENTER_X + c.lane * (p.roadW / 2 - 25);
-            const w = 46 * p.scale;
-            const h = 80 * p.scale;
-
-            // Sombra
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.beginPath();
-            ctx.ellipse(cx, p.y + h - 6, w * 0.5, 6 * p.scale, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Carroceria
-            ctx.fillStyle = c.color;
-            this.roundRect(cx - w / 2, p.y, w, h, 8 * p.scale);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-            ctx.lineWidth = 1.5;
-            this.roundRect(cx - w / 2, p.y, w, h, 8 * p.scale);
-            ctx.stroke();
-
-            // Janela traseira
-            ctx.fillStyle = 'rgba(0,0,0,0.25)';
-            this.roundRect(cx - w * 0.3, p.y + h * 0.15, w * 0.6, h * 0.3, 5 * p.scale);
-            ctx.fill();
-
-            // Luzes traseiras
-            ctx.fillStyle = '#ff3333';
-            this.roundRect(cx - w * 0.42, p.y + h * 0.35, 6 * p.scale, 8 * p.scale, 2);
-            ctx.fill();
-            this.roundRect(cx + w * 0.42 - 6 * p.scale, p.y + h * 0.35, 6 * p.scale, 8 * p.scale, 2);
-            ctx.fill();
-        }
-
-        roundRect(x, y, w, h, r) {
-            ctx.beginPath();
-            ctx.moveTo(x + r, y);
-            ctx.arcTo(x + w, y, x + w, y + h, r);
-            ctx.arcTo(x + w, y + h, x, y + h, r);
-            ctx.arcTo(x, y + h, x, y, r);
-            ctx.arcTo(x, y, x + w, y, r);
-            ctx.closePath();
-        }
-
-        showGameOver() {
-            document.getElementById('finalScore').textContent =
-                `Você ultrapassou ${this.score} carros em ${this.day} dia(s)`;
-            document.getElementById('gameOver').classList.remove('hidden');
-        }
-    }
-
-    let lastTime = 0;
-    function loop(time) {
-        const dt = Math.min(0.05, (time - lastTime) / 1000);
-        lastTime = time;
-        if (game && game.running) {
-            game.update(dt);
-            game.draw();
-            updateHUD();
-        }
-        requestAnimationFrame(loop);
-    }
-
-    function updateHUD() {
-        document.getElementById('day').textContent = game.day;
-        document.getElementById('score').textContent = game.score;
-        document.getElementById('speed').textContent = Math.round(game.speed);
-    }
-
-    document.addEventListener('keydown', e => { if (game) game.keys[e.key] = true; });
-    document.addEventListener('keyup', e => { if (game) game.keys[e.key] = false; });
-
-    function startGame() {
-        document.getElementById('startScreen').classList.add('hidden');
-        document.getElementById('gameOver').classList.add('hidden');
-        game = new Enduro();
-    }
-
-    requestAnimationFrame(loop);
-</script>
 </body>
 </html>
