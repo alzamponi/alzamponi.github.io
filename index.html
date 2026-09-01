@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Primeiro Site na Nuvem</title>
+    <title>Meu Site com Banco de Dados na Nuvem</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -35,13 +35,6 @@
             font-size: 14px;
             font-weight: bold;
         }
-        footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #888;
-            font-size: 14px;
-        }
-        /* Formulário */
         form {
             display: flex;
             flex-wrap: wrap;
@@ -80,104 +73,90 @@
             background: #0f3460;
             color: #fff;
         }
+        #status {
+            margin-top: 12px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Meu Primeiro Site na Nuvem ☁️</h1>
+    <h1>Meu Site com Banco de Dados na Nuvem ☁️</h1>
 
-    <p>Esta página foi hospedada com <strong>GitHub Pages</strong> — um serviço de nuvem gratuito.</p>
-
-    <div class="card">
-        <span class="badge">Exercício 1</span>
-        <h2>Sobre mim</h2>
-        <p>Escreva aqui uma breve apresentação. Exemplo: "Sou aluno(a) de automação e este é meu primeiro site publicado na nuvem."</p>
-    </div>
+    <p>Este site grava dados em uma <strong>planilha Google Sheets</strong> via API REST (SheetDB).</p>
 
     <div class="card">
-        <span class="badge">Cadastro</span>
-        <h2>Formulário com armazenamento</h2>
-        <p>Os dados ficam salvos no navegador (localStorage) e podem ser exportados como arquivo CSV.</p>
+        <span class="badge">Exercício 2</span>
+        <h2>Cadastro com armazenamento em nuvem</h2>
+        <p>Os dados ficam na nuvem — acessíveis de qualquer dispositivo, não apenas no seu navegador.</p>
 
         <form id="formCadastro">
             <input type="text" id="nome" placeholder="Nome" required>
             <input type="number" id="idade" placeholder="Idade" min="1" max="120" required>
-            <button type="submit">Salvar</button>
+            <button type="submit">Salvar na nuvem</button>
         </form>
 
-        <button type="button" id="btnVisualizar">Visualizar planilha</button>
-        <button type="button" id="btnBaixar">Baixar CSV</button>
-        <button type="button" id="btnLimpar">Limpar dados</button>
-
+        <button type="button" id="btnVisualizar">Visualizar dados</button>
+        <p id="status"></p>
         <div id="tabela"></div>
     </div>
 
     <footer>
-        <p>Feito com HTML e CSS — publicado em <strong>github.io</strong></p>
-        <p>Data: <span id="data"></span></p>
+        <p>Feito com HTML, CSS e JavaScript — dados em <strong>Google Sheets</strong> via API</p>
     </footer>
 
     <script>
-        // ===== Cadastro com localStorage + exportação CSV =====
-        const CHAVE = "alunos";
-        let alunos = JSON.parse(localStorage.getItem(CHAVE) || "[]");
+        // ===== CONFIGURAÇÃO =====
+        // Substitua pelo seu API ID do SheetDB
+        const API_ID = "https://sheetdb.io/api/v1/3zgktwug4xrqv";
+        const API_URL = `https://sheetdb.io/api/v1/${API_ID}`;
 
-        function salvar() {
-            localStorage.setItem(CHAVE, JSON.stringify(alunos));
-        }
-
-        function renderizar() {
-            const div = document.getElementById("tabela");
-            if (alunos.length === 0) {
-                div.innerHTML = "<p>Nenhum registro salvo ainda.</p>";
-                return;
-            }
-            let html = "<table><thead><tr><th>#</th><th>Nome</th><th>Idade</th></tr></thead><tbody>";
-            alunos.forEach((a, i) => {
-                html += `<tr><td>${i + 1}</td><td>${a.nome}</td><td>${a.idade}</td></tr>`;
-            });
-            html += "</tbody></table>";
-            div.innerHTML = html;
-        }
-
-        document.getElementById("formCadastro").addEventListener("submit", (e) => {
+        // Salvar registro (método POST)
+        document.getElementById("formCadastro").addEventListener("submit", async (e) => {
             e.preventDefault();
             const nome = document.getElementById("nome").value.trim();
             const idade = document.getElementById("idade").value;
-            if (!nome || !idade) return;
-            alunos.push({ nome, idade });
-            salvar();
-            renderizar();
-            e.target.reset();
-        });
+            const status = document.getElementById("status");
 
-        document.getElementById("btnVisualizar").addEventListener("click", renderizar);
-
-        document.getElementById("btnBaixar").addEventListener("click", () => {
-            const BOM = "\uFEFF"; // faz o Excel reconhecer UTF-8 (acentos)
-            const linhas = ["nome;idade"];
-            alunos.forEach((a) => linhas.push(`${a.nome};${a.idade}`));
-            const blob = new Blob([BOM + linhas.join("\n")], { type: "text/csv;charset=utf-8;" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "alunos.csv";
-            link.click();
-            URL.revokeObjectURL(link.href);
-        });
-
-        document.getElementById("btnLimpar").addEventListener("click", () => {
-            if (confirm("Apagar todos os registros?")) {
-                alunos = [];
-                salvar();
-                renderizar();
+            status.textContent = "Salvando na nuvem...";
+            try {
+                const res = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ data: [{ nome, idade }] })
+                });
+                if (!res.ok) throw new Error("Erro HTTP " + res.status);
+                status.textContent = "Registro salvo na nuvem!";
+                e.target.reset();
+            } catch (err) {
+                status.textContent = "Falha ao salvar: " + err.message;
             }
         });
 
-        // Exibe a data atual automaticamente
-        document.getElementById("data").textContent =
-            new Date().toLocaleDateString("pt-BR");
-
-        renderizar();
+        // Buscar registros (método GET)
+        document.getElementById("btnVisualizar").addEventListener("click", async () => {
+            const status = document.getElementById("status");
+            const div = document.getElementById("tabela");
+            status.textContent = "Buscando dados...";
+            try {
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error("Erro HTTP " + res.status);
+                const dados = await res.json();
+                if (dados.length === 0) {
+                    div.innerHTML = "<p>Nenhum registro encontrado.</p>";
+                } else {
+                    let html = "<table><thead><tr><th>#</th><th>Nome</th><th>Idade</th></tr></thead><tbody>";
+                    dados.forEach((d, i) => {
+                        html += `<tr><td>${i + 1}</td><td>${d.nome}</td><td>${d.idade}</td></tr>`;
+                    });
+                    html += "</tbody></table>";
+                    div.innerHTML = html;
+                }
+                status.textContent = dados.length + " registro(s) carregado(s).";
+            } catch (err) {
+                status.textContent = "Falha ao buscar: " + err.message;
+            }
+        });
     </script>
 
 </body>
