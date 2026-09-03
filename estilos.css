@@ -34,6 +34,7 @@ body {
 }
 
 .cartoes {
+  display: inline-block;
   display: flex;
   gap: 15px;
   margin-top: 20px;
