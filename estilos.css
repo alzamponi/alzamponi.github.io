@@ -27,6 +27,7 @@ body {
 }
 
 .destaque {
+  display: inline-block;
   background-color: #ffeaa7;
   padding: 10px;
   border-left: 4px solid #f39c12;
