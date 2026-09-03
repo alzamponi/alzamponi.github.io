@@ -1,163 +1,24 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Site com Banco de Dados na Nuvem</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            background-color: #f5f7fa;
-            color: #1a1a2e;
-            line-height: 1.6;
-        }
-        h1 {
-            color: #0f3460;
-            border-bottom: 3px solid #e94560;
-            padding-bottom: 10px;
-        }
-        .card {
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        .badge {
-            display: inline-block;
-            background: #e94560;
-            color: #fff;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        form {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin: 16px 0;
-        }
-        input {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 15px;
-        }
-        button {
-            background: #0f3460;
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 15px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #e94560;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background: #0f3460;
-            color: #fff;
-        }
-        #status {
-            margin-top: 12px;
-            font-weight: bold;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Meu primeiro CSS</title>
+  <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
+  <header class="cabecalho">
+    <h1>Bem-vindo ao CSS</h1>
+  </header>
 
-    <h1>Meu Site com Banco de Dados na Nuvem ☁️</h1>
+  <main class="conteudo">
+    <p class="destaque">Este parágrafo usa uma classe.</p>
+    <p>Este é um parágrafo comum.</p>
 
-    <p>Este site grava dados em uma <strong>planilha Google Sheets</strong> via API REST (SheetDB).</p>
-
-    <div class="card">
-        <span class="badge">Exercício 2</span>
-        <h2>Cadastro com armazenamento em nuvem</h2>
-        <p>Os dados ficam na nuvem — acessíveis de qualquer dispositivo, não apenas no seu navegador.</p>
-
-        <form id="formCadastro">
-            <input type="text" id="nome" placeholder="Nome" required>
-            <input type="number" id="idade" placeholder="Idade" min="1" max="120" required>
-            <button type="submit">Salvar na nuvem</button>
-        </form>
-
-        <button type="button" id="btnVisualizar">Visualizar dados</button>
-        <p id="status"></p>
-        <div id="tabela"></div>
+    <div class="cartoes">
+      <div class="cartao">Cartão 1</div>
+      <div class="cartao">Cartão 2</div>
+      <div class="cartao">Cartão 3</div>
     </div>
-
-    <footer>
-        <p>Feito com HTML, CSS e JavaScript — dados em <strong>Google Sheets</strong> via API</p>
-    </footer>
-
-    <script>
-        // ===== CONFIGURAÇÃO =====
-        // Substitua pelo seu API ID do SheetDB
-        const API_ID = "https://sheetdb.io/api/v1/3zgktwug4xrqv";
-        const API_URL = `https://sheetdb.io/api/v1/${API_ID}`;
-
-        // Salvar registro (método POST)
-        document.getElementById("formCadastro").addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const nome = document.getElementById("nome").value.trim();
-            const idade = document.getElementById("idade").value;
-            const status = document.getElementById("status");
-
-            status.textContent = "Salvando na nuvem...";
-            try {
-                const res = await fetch(API_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ data: [{ nome, idade }] })
-                });
-                if (!res.ok) throw new Error("Erro HTTP " + res.status);
-                status.textContent = "Registro salvo na nuvem!";
-                e.target.reset();
-            } catch (err) {
-                status.textContent = "Falha ao salvar: " + err.message;
-            }
-        });
-
-        // Buscar registros (método GET)
-        document.getElementById("btnVisualizar").addEventListener("click", async () => {
-            const status = document.getElementById("status");
-            const div = document.getElementById("tabela");
-            status.textContent = "Buscando dados...";
-            try {
-                const res = await fetch(API_URL);
-                if (!res.ok) throw new Error("Erro HTTP " + res.status);
-                const dados = await res.json();
-                if (dados.length === 0) {
-                    div.innerHTML = "<p>Nenhum registro encontrado.</p>";
-                } else {
-                    let html = "<table><thead><tr><th>#</th><th>Nome</th><th>Idade</th></tr></thead><tbody>";
-                    dados.forEach((d, i) => {
-                        html += `<tr><td>${i + 1}</td><td>${d.nome}</td><td>${d.idade}</td></tr>`;
-                    });
-                    html += "</tbody></table>";
-                    div.innerHTML = html;
-                }
-                status.textContent = dados.length + " registro(s) carregado(s).";
-            } catch (err) {
-                status.textContent = "Falha ao buscar: " + err.message;
-            }
-        });
-    </script>
-
+  </main>
 </body>
 </html>
