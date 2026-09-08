@@ -51,6 +51,7 @@ body {
 
 .botao {
   display: inline-block;
+  background-color: #3498db;
   padding: 12px 24px;
 }
 
