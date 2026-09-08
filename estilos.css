@@ -51,10 +51,11 @@ body {
 
 .botao {
   display: inline-block;
-  background-color: #3498db;
+  background-color: red;
+  border-radius: 8px;
   padding: 12px 24px;
 }
 
 .botao:hover {
-  background-color: #0056b3;
+  background-color: darkred;
 }
