@@ -23,19 +23,19 @@
       <button type="submit">Exibir dados</button>
     </form>
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('formCadastro');
-    const campoNome = document.getElementById('nome');
-    const campoIdade = document.getElementById('idade');
-    const saida = document.getElementById('saida');
+  document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('formCadastro');
+    var campoNome = document.getElementById('nome');
+    var campoIdade = document.getElementById('idade');
+    var saida = document.getElementById('saida');
 
-    form.addEventListener('submit', (evento) => {
+    form.addEventListener('submit', function (evento) {
       evento.preventDefault();
 
-      const nome = campoNome.value.trim();
-      const idade = campoIdade.value;
+      var nome = campoNome.value.trim();
+      var idade = campoIdade.value;
 
-      saida.textContent = `Olá, ${nome}! Você tem ${idade} anos.`;
+      saida.textContent = 'Olá, ' + nome + '! Você tem ' + idade + ' anos.';
       saida.style.display = 'block';
 
       form.reset();
