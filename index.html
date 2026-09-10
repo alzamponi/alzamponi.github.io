@@ -22,15 +22,8 @@
 
       <button type="submit">Exibir dados</button>
     </form>
-
-    
-
-
-  
-
-
-
-  <script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('formCadastro');
     const campoNome = document.getElementById('nome');
     const campoIdade = document.getElementById('idade');
@@ -47,6 +40,7 @@
 
       form.reset();
     });
-  </script>
+  });
+</script>
 </body>
 </html>
