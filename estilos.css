@@ -1,63 +1,59 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  line-height: 1.6;
-  background-color: #f4f4f4;
-  color: #333;
-}
-
-.cabecalho {
-  background-color: skyblue;
-  color: darkblue;
-  text-align: center;
-  padding: 30px;
-}
-
-.conteudo {
-  max-width: 800px;
-  margin: 20px auto;
-  padding: 20px;
-  background-color: white;
-  border-radius: 8px;
-}
-
-.destaque {
-  display: block;
-  background-color: #ffeaa7;
-  padding: 10px;
-  border-left: 4px solid #f39c12;
-}
-
-.cartoes {
-  display: inline-block;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #f0f4f8;
+  min-height: 100vh;
   display: flex;
-  gap: 15px;
-  margin-top: 20px;
+  align-items: center;
+  justify-content: center;
 }
 
-.cartao {
-  flex: 1;
-  background-color: #3498db;
-  color: white;
-  padding: 20px;
-  text-align: center;
-  border-radius: 6px;
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 32px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-.botao {
-  display: inline-block;
-  background-color: red;
+h1 { font-size: 1.4rem; margin-bottom: 20px; color: #1a1a2e; }
+
+label { display: block; font-weight: 600; margin-bottom: 6px; color: #333; }
+
+input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #d0d0d0;
   border-radius: 8px;
-  padding: 12px 24px;
-  margin-left: auto;
-  margin-right: auto;
+  font-size: 1rem;
+  margin-bottom: 16px;
 }
 
-.botao:hover {
-  background-color: darkred;
+input:focus { outline: none; border-color: #2563eb; }
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover { background: #1d4ed8; }
+
+#saida {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #1e3a8a;
+  font-weight: 600;
+  text-align: center;
+  display: none;
 }
